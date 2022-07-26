@@ -59,13 +59,14 @@ func createStaticBundle(config *config) error {
 	renderedHtmlJson, err := exec.Command("node", outfile).Output()
 
 	if err != nil {
-		return err
+		msg := err.(*exec.ExitError).Stderr
+		return fmt.Errorf("node exec failed: %s", msg)
 	}
 
 	err = json.Unmarshal(renderedHtmlJson, &renderedHtml)
 
 	if err != nil {
-		return err
+		return fmt.Errorf("\n\n%s\n\njson parse failed: %s", renderedHtmlJson, err)
 	}
 
 	for _, page := range config.pages {

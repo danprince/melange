@@ -242,10 +242,14 @@ func readPage(p *page, config *config) error {
 	return nil
 }
 
-func readPages(config *config) {
+func readPages(config *config) error {
 	for _, page := range config.pages {
-		readPage(page, config)
+		if err := readPage(page, config); err != nil {
+			return err
+		}
 	}
+
+	return nil
 }
 
 type renderContext struct {
@@ -373,11 +377,19 @@ func Build(dir string) (*config, error) {
 	start := time.Now()
 	config := createConfig(dir)
 	crawlSite(&config)
-	readPages(&config)
-	renderPages(&config)
+
+	if err := readPages(&config); err != nil {
+		return nil, err
+	}
+
+	if err := renderPages(&config); err != nil {
+		return nil, err
+	}
+
 	if err := bundle(&config); err != nil {
 		return nil, err
 	}
+
 	writeSite(&config)
 	fmt.Printf("built site in %s\n", time.Since(start))
 	return &config, nil

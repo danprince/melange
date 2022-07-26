@@ -436,6 +436,11 @@ func Build(dir string, prod bool) (*config, error) {
 		return nil, err
 	}
 
+	if prod {
+		os.Remove(config.cacheDir)
+		os.Remove(config.outputDir)
+	}
+
 	crawlSite(&config)
 
 	if err := readPages(&config); err != nil {

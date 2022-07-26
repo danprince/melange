@@ -3,17 +3,14 @@ package main
 import (
 	"bytes"
 	_ "embed"
-	"encoding/json"
 	"flag"
 	"fmt"
-	"hash/fnv"
 	"io"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
 	"path"
-	"path/filepath"
 	"sort"
 	"strings"
 	"text/template"
@@ -140,20 +137,6 @@ func createMarkdownRenderer() goldmark.Markdown {
 	)
 }
 
-func shouldIgnore(name string) bool {
-	return name[0] == '_' || name[0] == '.'
-}
-
-func isPageFile(name string) bool {
-	return filepath.Ext(name) == ".md"
-}
-
-func shortHash(s string) string {
-	h := fnv.New32a()
-	h.Write([]byte(s))
-	return fmt.Sprintf("%x", h.Sum32())
-}
-
 type crawldir struct {
 	name  string
 	depth int
@@ -208,11 +191,6 @@ func crawlSite(config *config) {
 			}
 		}
 	}
-}
-
-func toJson(props *props) string {
-	out, _ := json.Marshal(props)
-	return string(out)
 }
 
 func (page *page) addElement(src string, props props) *element {

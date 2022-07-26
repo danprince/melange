@@ -26,10 +26,10 @@ import (
 )
 
 var (
-	//go:embed static/theme.gohtml
+	//go:embed theme.gohtml
 	themeHtml string
 
-	//go:embed static/theme.css
+	//go:embed theme.css
 	themeCss string
 )
 

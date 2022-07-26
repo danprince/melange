@@ -20,4 +20,24 @@ Go has to ask a Nodejs process to evaluate the static bundle, then the response 
 Finally the appropriate scripts/styles are injected into the pages and the everything is copied/written to disk.
 
 ## TODO
-- Use long-running node process to prevent paying for once-per-build startup
+- [ ] Use long-running node process to prevent paying for once-per-build startup
+- [ ] Support custom _theme.html files
+- [x] Fix collisions between hydrations IDs across separate files
+- [x] Fix rendering order to make `{{ pages }}` deterministic (render index.md last)
+- [x] Figure out how to make hydration generic (preact/react swap)
+- [ ] Support build time props on components
+- [ ] Syntax highlighting
+- [ ] Make common error presentation as friendly as possible
+  - [ ] Bundler errors (probably parse related)
+  - [ ] Errors inside templates
+  - [ ] Errors inside node
+- [ ] Bundle function that adds a script without hydrations
+- [ ] Preflight checks for dependencies
+  - [ ] Node
+  - [ ] Framework
+- [ ] Make jsxImportSource work (might be blocked by https://github.com/evanw/esbuild/pull/2349)
+- [ ] Support prod builds
+
+## Tests
+- Test that page with no elements is has no script tags
+- Test that page with static elements has no script tags

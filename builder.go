@@ -82,7 +82,7 @@ type config struct {
 func createConfig(inputDir string, production bool) (config, error) {
 	outputDir := path.Join(inputDir, "_site")
 	pagesDir := path.Join(inputDir, "pages")
-	assetsDir := path.Join(outputDir, "assets")
+	assetsDir := path.Join(outputDir, "_assets")
 	cacheDir := path.Join(inputDir, "node_modules/.cache/melange")
 	template, err := createThemeTemplate(pagesDir, "_theme.html", "_theme.gohtml")
 

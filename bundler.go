@@ -90,20 +90,26 @@ func createClientBundles(config *config) error {
 		}
 	}
 
+	entryNames := "[name]"
+
+	if config.production {
+		entryNames = "[name]-[hash]"
+	}
+
 	result := api.Build(api.BuildOptions{
-		EntryPoints: entryPoints,
-		EntryNames:  "[name]",
-		Outdir:      path.Join(config.outputDir, "assets"),
-		Write:       true,
-		Bundle:      true,
-		Metafile:    true,
-		Sourcemap:   api.SourceMapExternal,
-		//MinifyWhitespace: true,
-		//MinifyIdentifiers: true,
-		//MinifySyntax: true,
-		Platform: api.PlatformBrowser,
-		Format:   api.FormatIIFE,
-		Plugins:  []api.Plugin{hydratePagesPlugin(config)},
+		EntryPoints:       entryPoints,
+		EntryNames:        entryNames,
+		Outdir:            path.Join(config.outputDir, "assets"),
+		Write:             true,
+		Bundle:            true,
+		Metafile:          true,
+		Sourcemap:         api.SourceMapExternal,
+		MinifyWhitespace:  config.production,
+		MinifyIdentifiers: config.production,
+		MinifySyntax:      config.production,
+		Platform:          api.PlatformBrowser,
+		Format:            api.FormatIIFE,
+		Plugins:           []api.Plugin{hydratePagesPlugin(config)},
 	})
 
 	if len(result.Errors) > 0 {

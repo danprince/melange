@@ -36,7 +36,7 @@ Finally the appropriate scripts/styles are injected into the pages and the every
   - [ ] Node
   - [ ] Framework
 - [ ] Make jsxImportSource work (might be blocked by https://github.com/evanw/esbuild/pull/2349)
-- [ ] Support prod builds
+- [x] Support prod builds
 
 ## Tests
 - Test that page with no elements is has no script tags

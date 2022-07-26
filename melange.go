@@ -61,6 +61,7 @@ type page struct {
 }
 
 type config struct {
+	production  bool
 	inputDir    string
 	outputDir   string
 	pagesDir    string
@@ -73,7 +74,7 @@ type config struct {
 	framework   framework
 }
 
-func createConfig(inputDir string) config {
+func createConfig(inputDir string, production bool) config {
 	outputDir := path.Join(inputDir, "_site")
 	pagesDir := path.Join(inputDir, "pages")
 	cacheDir := path.Join(inputDir, "node_modules/.cache/melange")
@@ -85,14 +86,15 @@ func createConfig(inputDir string) config {
 	}
 
 	return config{
-		inputDir:  inputDir,
-		outputDir: outputDir,
-		pagesDir:  pagesDir,
-		cacheDir:  cacheDir,
-		template:  template,
-		markdown:  createMarkdownRenderer(),
-		pages:     map[string]*page{},
-		framework: preact,
+		production: production,
+		inputDir:   inputDir,
+		outputDir:  outputDir,
+		pagesDir:   pagesDir,
+		cacheDir:   cacheDir,
+		template:   template,
+		markdown:   createMarkdownRenderer(),
+		pages:      map[string]*page{},
+		framework:  preact,
 	}
 }
 
@@ -375,9 +377,9 @@ func writeSite(config *config) {
 	}
 }
 
-func Build(dir string) (*config, error) {
+func Build(dir string, prod bool) (*config, error) {
 	start := time.Now()
-	config := createConfig(dir)
+	config := createConfig(dir, prod)
 	crawlSite(&config)
 
 	if err := readPages(&config); err != nil {
@@ -397,8 +399,8 @@ func Build(dir string) (*config, error) {
 	return &config, nil
 }
 
-func Serve(dir string) {
-	config, err := Build(dir)
+func Serve(dir string, prod bool) {
+	config, err := Build(dir, prod)
 
 	if err != nil {
 		log.Fatal(err)
@@ -409,7 +411,7 @@ func Serve(dir string) {
 	http.Handle("/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Rebuild the site whenever an HTML file is requested
 		if r.URL.Path == "/" || strings.HasSuffix(r.URL.Path, ".html") {
-			config, err = Build(dir)
+			config, err = Build(dir, prod)
 		}
 
 		if err != nil {
@@ -446,8 +448,8 @@ func main() {
 	inputDir, _ := os.Getwd()
 
 	if serve {
-		Serve(inputDir)
+		Serve(inputDir, false)
 	} else {
-		Build(inputDir)
+		Build(inputDir, true)
 	}
 }

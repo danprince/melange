@@ -1,0 +1,30 @@
+body {
+  font: 1.2rem/1.8 Georgia, 'Times New Roman', serif;
+  padding: 2rem 0 8em 0;
+  max-width: 700px;
+  margin: 0 auto;
+  padding: 0 1rem;
+}
+
+h1, time {
+  font-family: 'Helvetica Neue', 'Arial Nova', Helvetica, Arial, sans-serif;
+}
+
+h1 {
+  margin-bottom: 0;
+}
+
+h2, h3, h4 {
+  font-weight: normal;
+  margin-top: 2em;
+}
+
+pre, code {
+  font-family: Consolas, Menlo, Monaco, monospace;
+  font-size: 1.1rem;
+}
+
+img, svg {
+  max-width: 100%;
+}
+

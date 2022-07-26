@@ -27,16 +27,18 @@ var preact = framework{
 
 		for _, page := range config.pages {
 			for _, element := range page.elements {
-				builder.WriteString(fmt.Sprintf(
-					"import { default as C%s } from \"%s\";\n",
-					element.id,
-					path.Join(page.dir, element.src),
-				))
-				builder.WriteString(fmt.Sprintf(
-					"elements.%s = render(h(C%s, null));\n",
-					element.id,
-					element.id,
-				))
+				if element.ssr {
+					builder.WriteString(fmt.Sprintf(
+						"import { default as C%s } from \"%s\";\n",
+						element.id,
+						path.Join(page.dir, element.src),
+					))
+					builder.WriteString(fmt.Sprintf(
+						"elements.%s = render(h(C%s, null));\n",
+						element.id,
+						element.id,
+					))
+				}
 			}
 		}
 

@@ -119,7 +119,7 @@ func createClientBundles(config *config) error {
 				name := page.id
 
 				if !config.production {
-					name = slugify(page.relPath)
+					name = slugify(page.relPath) + page.id
 				}
 
 				entryPoints = append(entryPoints, api.EntryPoint{

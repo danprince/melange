@@ -8,8 +8,8 @@ import (
 var slugRegex = regexp.MustCompile(`[^\w]`)
 
 func slugify(s string) string {
-	s = slugRegex.ReplaceAllString(s, "-")
-	s = strings.TrimSuffix(s, "-")
-	s = strings.TrimPrefix(s, "-")
+	s = slugRegex.ReplaceAllString(s, "_")
+	s = strings.TrimSuffix(s, "_")
+	s = strings.TrimPrefix(s, "_")
 	return s
 }

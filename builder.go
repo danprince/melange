@@ -69,6 +69,7 @@ type config struct {
 	inputDir    string
 	outputDir   string
 	pagesDir    string
+	assetsDir   string
 	cacheDir    string
 	pages       map[string]*page
 	assets      []*asset
@@ -81,6 +82,7 @@ type config struct {
 func createConfig(inputDir string, production bool) (config, error) {
 	outputDir := path.Join(inputDir, "_site")
 	pagesDir := path.Join(inputDir, "pages")
+	assetsDir := path.Join(outputDir, "assets")
 	cacheDir := path.Join(inputDir, "node_modules/.cache/melange")
 	template, err := createThemeTemplate(pagesDir, "_theme.html", "_theme.gohtml")
 
@@ -93,6 +95,7 @@ func createConfig(inputDir string, production bool) (config, error) {
 		inputDir:   inputDir,
 		outputDir:  outputDir,
 		pagesDir:   pagesDir,
+		assetsDir:  assetsDir,
 		cacheDir:   cacheDir,
 		template:   template,
 		markdown:   createMarkdownRenderer(),
@@ -437,8 +440,8 @@ func Build(dir string, prod bool) (*config, error) {
 	}
 
 	if prod {
-		os.Remove(config.cacheDir)
-		os.Remove(config.outputDir)
+		os.RemoveAll(config.cacheDir)
+		os.RemoveAll(config.outputDir)
 	}
 
 	crawlSite(&config)

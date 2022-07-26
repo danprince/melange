@@ -12,6 +12,35 @@ import (
 	"github.com/evanw/esbuild/pkg/api"
 )
 
+var loader = map[string]api.Loader{
+	".aac":         api.LoaderFile,
+	".css":         api.LoaderFile,
+	".eot":         api.LoaderFile,
+	".flac":        api.LoaderFile,
+	".gif":         api.LoaderFile,
+	".ico":         api.LoaderFile,
+	".jpeg":        api.LoaderFile,
+	".jpg":         api.LoaderFile,
+	".js":          api.LoaderJS,
+	".jsx":         api.LoaderJSX,
+	".json":        api.LoaderJSON,
+	".mp3":         api.LoaderFile,
+	".mp4":         api.LoaderFile,
+	".ogg":         api.LoaderFile,
+	".otf":         api.LoaderFile,
+	".png":         api.LoaderFile,
+	".svg":         api.LoaderFile,
+	".ts":          api.LoaderTS,
+	".tsx":         api.LoaderTSX,
+	".ttf":         api.LoaderFile,
+	".wav":         api.LoaderFile,
+	".webm":        api.LoaderFile,
+	".webmanifest": api.LoaderFile,
+	".webp":        api.LoaderFile,
+	".woff":        api.LoaderFile,
+	".woff2":       api.LoaderFile,
+}
+
 func bundle(config *config) error {
 	if err := createStaticBundle(config); err != nil {
 		return err
@@ -44,6 +73,8 @@ func createStaticBundle(config *config) error {
 		Format:      api.FormatCommonJS,
 		External:    config.framework.staticExternal,
 		Incremental: !config.production,
+		Loader:      loader,
+		PublicPath:  strings.TrimPrefix(config.assetsDir, config.outputDir),
 	})
 
 	if len(result.Errors) > 0 {
@@ -101,7 +132,7 @@ func createClientBundles(config *config) error {
 	result := api.Build(api.BuildOptions{
 		EntryPoints:       entryPoints,
 		EntryNames:        entryNames,
-		Outdir:            path.Join(config.outputDir, "assets"),
+		Outdir:            config.assetsDir,
 		Write:             true,
 		Bundle:            true,
 		Metafile:          true,
@@ -113,6 +144,8 @@ func createClientBundles(config *config) error {
 		Platform:          api.PlatformBrowser,
 		Format:            api.FormatIIFE,
 		Plugins:           []api.Plugin{hydratePagesPlugin(config)},
+		PublicPath:        strings.TrimPrefix(config.assetsDir, config.outputDir),
+		Loader:            loader,
 	})
 
 	if len(result.Errors) > 0 {

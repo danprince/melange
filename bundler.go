@@ -32,16 +32,16 @@ func createStaticBundle(config *config) error {
 	builder.WriteString("let elements = {};")
 
 	for _, page := range config.pages {
-		for _, hydration := range page.hydrations {
+		for _, element := range page.elements {
 			builder.WriteString(fmt.Sprintf(
 				"import { default as C%s } from \"%s\";\n",
-				hydration.elementId,
-				path.Join(page.dir, hydration.src),
+				element.id,
+				path.Join(page.dir, element.src),
 			))
 			builder.WriteString(fmt.Sprintf(
 				"elements.%s = render(h(C%s, null));\n",
-				hydration.elementId,
-				hydration.elementId,
+				element.id,
+				element.id,
 			))
 		}
 	}
@@ -79,23 +79,23 @@ func createStaticBundle(config *config) error {
 	}
 
 	// TODO: This is a huge bottleneck (waiting for node to start)
-	var hydrations map[string]string
-	hydrationJson, err := exec.Command("node", outfile).Output()
+	var renderedHtml map[string]string
+	renderedHtmlJson, err := exec.Command("node", outfile).Output()
 
 	if err != nil {
 		return err
 	}
 
-	err = json.Unmarshal((hydrationJson), &hydrations)
+	err = json.Unmarshal(renderedHtmlJson, &renderedHtml)
 
 	if err != nil {
 		return err
 	}
 
 	for _, page := range config.pages {
-		for _, hydration := range page.hydrations {
-			html := hydrations[hydration.elementId]
-			page.Contents = strings.Replace(page.Contents, hydration.token, html, -1)
+		for _, element := range page.elements {
+			html := renderedHtml[element.id]
+			page.Contents = strings.Replace(page.Contents, element.token, html, -1)
 		}
 	}
 
@@ -106,9 +106,12 @@ func createClientBundles(config *config) error {
 	var entryPoints []string
 
 	for _, page := range config.pages {
-		if len(page.hydrations) > 0 {
-			entryPoint := fmt.Sprintf("page:%s", page.id)
-			entryPoints = append(entryPoints, entryPoint)
+		for _, element := range page.elements {
+			if element.hydrate {
+				entryPoint := fmt.Sprintf("page:%s", page.id)
+				entryPoints = append(entryPoints, entryPoint)
+				break
+			}
 		}
 	}
 
@@ -211,29 +214,23 @@ func hydratePagesPlugin(config *config) api.Plugin {
 
 				var builder strings.Builder
 				builder.WriteString("import { h, hydrate, Fragment } from \"preact\";\n")
-				hydrations := 0
 
-				for _, hydration := range page.hydrations {
-					if hydration.hydrate {
-						hydrations += 1
+				for _, element := range page.elements {
+					if element.hydrate {
 						builder.WriteString(fmt.Sprintf(
 							"import { default as %s } from \"%s\";\n",
-							hydration.elementId,
-							hydration.src,
+							element.id,
+							element.src,
 						))
 						builder.WriteString(fmt.Sprintf(
 							"hydrate(h(%s), document.getElementById(\"%s\"));\n",
-							hydration.elementId,
-							hydration.elementId,
+							element.id,
+							element.id,
 						))
 					}
 				}
 
-				var contents string
-
-				if hydrations > 0 {
-					contents = builder.String()
-				}
+				contents := builder.String()
 
 				return api.OnLoadResult{
 					Contents:   &contents,

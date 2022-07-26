@@ -38,26 +38,26 @@ type asset struct {
 	relPath string
 }
 
-type hydration struct {
-	elementId string
-	src       string
-	hydrate   bool
-	ssr       bool
-	token     string
+type element struct {
+	id      string
+	src     string
+	hydrate bool
+	ssr     bool
+	token   string
 }
 
 type page struct {
-	id         string
-	absPath    string
-	dir        string
-	relPath    string
-	depth      int
-	template   *template.Template
-	Contents   string
-	Url        string
-	Data       map[string]any
-	Name       string
-	hydrations []hydration
+	id       string
+	absPath  string
+	dir      string
+	relPath  string
+	depth    int
+	template *template.Template
+	Contents string
+	Url      string
+	Data     map[string]any
+	Name     string
+	elements []element
 }
 
 type config struct {
@@ -178,18 +178,17 @@ func crawlSite(config *config) {
 }
 
 func (page *page) addElement(src string, hydrate bool, ssr bool) string {
-	elementId := fmt.Sprintf("$hydrate_%d", len(page.hydrations))
+	hash := shortHash(fmt.Sprintf("%s%d", page.relPath, len(page.elements)))
+	elementId := fmt.Sprintf("$hydrate_%s", hash)
 	token := fmt.Sprintf("<!-- %s -->", elementId)
 
-	if hydrate {
-		page.hydrations = append(page.hydrations, hydration{
-			elementId: elementId,
-			src:       src,
-			hydrate:   hydrate,
-			ssr:       ssr,
-			token:     token,
-		})
-	}
+	page.elements = append(page.elements, element{
+		id:      elementId,
+		src:     src,
+		hydrate: hydrate,
+		ssr:     ssr,
+		token:   token,
+	})
 
 	if ssr && !hydrate {
 		return token

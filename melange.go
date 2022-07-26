@@ -70,6 +70,7 @@ type config struct {
 	directories []string
 	markdown    goldmark.Markdown
 	template    *template.Template
+	framework   framework
 }
 
 func createConfig(inputDir string) config {
@@ -91,6 +92,7 @@ func createConfig(inputDir string) config {
 		template:  template,
 		markdown:  createMarkdownRenderer(),
 		pages:     map[string]*page{},
+		framework: preact,
 	}
 }
 

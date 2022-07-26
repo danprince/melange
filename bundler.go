@@ -25,34 +25,12 @@ func bundle(config *config) error {
 }
 
 func createStaticBundle(config *config) error {
-	var builder strings.Builder
-
-	builder.WriteString("import { h } from \"preact\";\n")
-	builder.WriteString("import { render } from \"preact-render-to-string\";\n")
-	builder.WriteString("let elements = {};")
-
-	for _, page := range config.pages {
-		for _, element := range page.elements {
-			builder.WriteString(fmt.Sprintf(
-				"import { default as C%s } from \"%s\";\n",
-				element.id,
-				path.Join(page.dir, element.src),
-			))
-			builder.WriteString(fmt.Sprintf(
-				"elements.%s = render(h(C%s, null));\n",
-				element.id,
-				element.id,
-			))
-		}
-	}
-
-	builder.WriteString("process.stdout.write(JSON.stringify(elements))")
-
+	contents := config.framework.staticBundle(config)
 	outfile := path.Join(config.cacheDir, "static-bundle.js")
 
 	result := api.Build(api.BuildOptions{
 		Stdin: &api.StdinOptions{
-			Contents:   builder.String(),
+			Contents:   contents,
 			ResolveDir: config.inputDir,
 			Sourcefile: "static-bundle.js",
 			Loader:     api.LoaderJS,
@@ -65,9 +43,9 @@ func createStaticBundle(config *config) error {
 		Platform:    api.PlatformNode,
 		Format:      api.FormatCommonJS,
 		JSXMode:     api.JSXModeTransform,
-		JSXFactory:  "h",
-		JSXFragment: "Fragment",
-		External:    []string{"preact", "preact-render-to-string"},
+		JSXFactory:  config.framework.esbuildOptions.JSXFactory,
+		JSXFragment: config.framework.esbuildOptions.JSXFragment,
+		External:    config.framework.staticExternal,
 	})
 
 	if len(result.Errors) > 0 {
@@ -129,8 +107,8 @@ func createClientBundles(config *config) error {
 		Platform:    api.PlatformBrowser,
 		Format:      api.FormatIIFE,
 		JSXMode:     api.JSXModeTransform,
-		JSXFactory:  "h",
-		JSXFragment: "Fragment",
+		JSXFactory:  config.framework.esbuildOptions.JSXFactory,
+		JSXFragment: config.framework.esbuildOptions.JSXFragment,
 		Plugins:     []api.Plugin{hydratePagesPlugin(config)},
 	})
 
@@ -211,26 +189,7 @@ func hydratePagesPlugin(config *config) api.Plugin {
 			}, func(args api.OnLoadArgs) (api.OnLoadResult, error) {
 				id := strings.Replace(args.Path, filter, "", 1)
 				page := config.pages[id]
-
-				var builder strings.Builder
-				builder.WriteString("import { h, hydrate, Fragment } from \"preact\";\n")
-
-				for _, element := range page.elements {
-					if element.hydrate {
-						builder.WriteString(fmt.Sprintf(
-							"import { default as %s } from \"%s\";\n",
-							element.id,
-							element.src,
-						))
-						builder.WriteString(fmt.Sprintf(
-							"hydrate(h(%s), document.getElementById(\"%s\"));\n",
-							element.id,
-							element.id,
-						))
-					}
-				}
-
-				contents := builder.String()
+				contents := config.framework.clientBundle(page)
 
 				return api.OnLoadResult{
 					Contents:   &contents,

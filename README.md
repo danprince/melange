@@ -25,7 +25,7 @@ Finally the appropriate scripts/styles are injected into the pages and the every
 - [x] Fix collisions between hydrations IDs across separate files
 - [x] Fix rendering order to make `{{ pages }}` deterministic (render index.md last)
 - [x] Figure out how to make hydration generic (preact/react swap)
-- [ ] Support build time props on components
+- [x] Support build time props on components
 - [ ] Syntax highlighting
 - [ ] Make common error presentation as friendly as possible
   - [ ] Bundler errors (probably parse related)
@@ -37,6 +37,7 @@ Finally the appropriate scripts/styles are injected into the pages and the every
   - [ ] Framework
 - [ ] Make jsxImportSource work (might be blocked by https://github.com/evanw/esbuild/pull/2349)
 - [x] Support prod builds
+- [ ] Solve the problem of SSR components not generating CSS for client
 
 ## Tests
 - Test that page with no elements is has no script tags

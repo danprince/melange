@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	_ "embed"
+	"encoding/json"
 	"flag"
 	"fmt"
 	"hash/fnv"
@@ -38,12 +39,15 @@ type asset struct {
 	relPath string
 }
 
+type props map[string]any
+
 type element struct {
-	id      string
-	src     string
-	hydrate bool
-	ssr     bool
-	token   string
+	id    string
+	src   string
+	csr   bool
+	ssr   bool
+	token string
+	props props
 }
 
 type page struct {
@@ -57,7 +61,7 @@ type page struct {
 	Url      string
 	Data     map[string]any
 	Name     string
-	elements []element
+	elements []*element
 }
 
 type config struct {
@@ -181,23 +185,34 @@ func crawlSite(config *config) {
 	}
 }
 
-func (page *page) addElement(src string, hydrate bool, ssr bool) string {
+func toJson(props *props) string {
+	out, _ := json.Marshal(props)
+	return string(out)
+}
+
+func (page *page) addElement(src string, props props) *element {
 	hash := shortHash(fmt.Sprintf("%s%d", page.relPath, len(page.elements)))
-	elementId := fmt.Sprintf("$hydrate_%s", hash)
-	token := fmt.Sprintf("<!-- %s -->", elementId)
+	id := fmt.Sprintf("$hydrate_%s", hash)
+	token := fmt.Sprintf("<!-- %s -->", id)
 
-	page.elements = append(page.elements, element{
-		id:      elementId,
-		src:     src,
-		hydrate: hydrate,
-		ssr:     ssr,
-		token:   token,
-	})
+	el := element{
+		id:    id,
+		src:   src,
+		ssr:   true,
+		csr:   false,
+		token: token,
+		props: props,
+	}
 
-	if ssr && !hydrate {
-		return token
+	page.elements = append(page.elements, &el)
+	return &el
+}
+
+func (e *element) String() string {
+	if e.ssr && !e.csr {
+		return e.token
 	} else {
-		return fmt.Sprintf("<div id=\"%s\">%s</div>", elementId, token)
+		return fmt.Sprintf("<div id=\"%s\">%s</div>", e.id, e.token)
 	}
 }
 
@@ -214,6 +229,14 @@ func (config *config) getPageIndex(dir string) []*page {
 	return index
 }
 
+func parseProps(kvs ...any) props {
+	props := map[string]any{}
+	for i := 0; i < len(kvs); i += 2 {
+		props[kvs[i].(string)] = kvs[i+1]
+	}
+	return props
+}
+
 func readPage(p *page, config *config) error {
 	contents, err := os.ReadFile(p.absPath)
 
@@ -222,14 +245,20 @@ func readPage(p *page, config *config) error {
 	}
 
 	templateFuncs := template.FuncMap{
-		"render": func(entry string) string {
-			return p.addElement(entry, false, true)
+		"render": func(entry string, args ...any) *element {
+			props := parseProps(args...)
+			el := p.addElement(entry, props)
+			return el
 		},
-		"hydrate": func(entry string) string {
-			return p.addElement(entry, true, true)
+		"client_load": func(element *element) *element {
+			element.csr = true
+			element.ssr = true
+			return element
 		},
-		"dynamic": func(entry string) string {
-			return p.addElement(entry, true, false)
+		"client_only": func(element *element) *element {
+			element.csr = true
+			element.ssr = false
+			return element
 		},
 		"pages": func() []*page {
 			return config.getPageIndex(p.dir)
@@ -416,7 +445,7 @@ func Serve(dir string, prod bool) {
 
 		if err != nil {
 			http.Error(w, "Build failed", 500)
-			log.Fatal(err)
+			log.Println(err)
 		}
 
 		fs.ServeHTTP(w, r)

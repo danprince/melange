@@ -48,15 +48,16 @@ var preact = framework{
 		builder.WriteString("import { h, hydrate, Fragment } from \"preact\";\n")
 
 		for _, element := range page.elements {
-			if element.hydrate {
+			if element.csr {
 				builder.WriteString(fmt.Sprintf(
 					"import { default as %s } from \"%s\";\n",
 					element.id,
 					element.src,
 				))
 				builder.WriteString(fmt.Sprintf(
-					"hydrate(h(%s), document.getElementById(\"%s\"));\n",
+					"hydrate(h(%s, %s), document.getElementById(\"%s\"));\n",
 					element.id,
+					toJson(&element.props),
 					element.id,
 				))
 			}
@@ -100,16 +101,17 @@ var react = framework{
 		builder.WriteString("import { hydrateRoot } from \"react-dom/client\";\n")
 
 		for _, element := range page.elements {
-			if element.hydrate {
+			if element.csr {
 				builder.WriteString(fmt.Sprintf(
 					"import { default as %s } from \"%s\";\n",
 					element.id,
 					element.src,
 				))
 				builder.WriteString(fmt.Sprintf(
-					"hydrateRoot(document.getElementById(\"%s\"), React.createElement(%s));\n",
+					"hydrateRoot(document.getElementById(\"%s\"), React.createElement(%s, %s));\n",
 					element.id,
 					element.id,
+					toJson(&element.props),
 				))
 			}
 		}

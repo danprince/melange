@@ -82,7 +82,7 @@ func createClientBundles(config *config) error {
 
 	for _, page := range config.pages {
 		for _, element := range page.elements {
-			if element.hydrate {
+			if element.csr {
 				entryPoint := fmt.Sprintf("page:%s", page.id)
 				entryPoints = append(entryPoints, entryPoint)
 				break

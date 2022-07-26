@@ -28,3 +28,6 @@ img, svg {
   max-width: 100%;
 }
 
+main > nav {
+  margin-top: 3em;
+}

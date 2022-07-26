@@ -10,14 +10,18 @@
   </head>
   <body>
     <main>
-      {{ with .Page.Data }}
-        {{ if .title }}
-          <h1>{{ .title }}</h1>
-        {{ end }}
-        {{ if .date }}
-          <time>{{ .date }}</time>
-        {{ end }}
+      <nav>
+        <a href="/">Posts</a>
+      </nav>
+
+      {{ if .Page.Data.title }}
+        <h1>{{ .Page.Data.title }}</h1>
       {{ end }}
+
+      {{ if .Page.Data.date }}
+        <time>{{ .Page.Data.date }}</time>
+      {{ end }}
+
       {{ .Page.Contents }}
     </main>
   </body>

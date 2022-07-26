@@ -1,13 +1,9 @@
 ---
-title: The Title
-date: 2022-07-26
+title: My Site
+nav: Posts
 ---
 
-Some content. Don't forget it's _markdown_.
-
-{{ "./_counter.tsx" | render }}
-{{ "./_counter.tsx" | hydrate }}
-{{ "./_counter.tsx" | dynamic }}
+This is an example index page that lists out all the posts in this directory.
 
 {{ range pages }}
 - [{{ .Data.title }}]({{ .Url }})

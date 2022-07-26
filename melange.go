@@ -13,12 +13,14 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"sort"
 	"strings"
 	"text/template"
 	"time"
 
 	"github.com/yuin/goldmark"
 	meta "github.com/yuin/goldmark-meta"
+	"github.com/yuin/goldmark/extension"
 	"github.com/yuin/goldmark/parser"
 	html "github.com/yuin/goldmark/renderer/html"
 )
@@ -32,8 +34,8 @@ var (
 )
 
 type asset struct {
-	path         string
-	relativePath string
+	absPath string
+	relPath string
 }
 
 type hydration struct {
@@ -45,16 +47,17 @@ type hydration struct {
 }
 
 type page struct {
-	id           string
-	path         string
-	dir          string
-	relativePath string
-	template     *template.Template
-	Contents     string
-	Url          string
-	Data         map[string]any
-	Name         string
-	hydrations   []hydration
+	id         string
+	absPath    string
+	dir        string
+	relPath    string
+	depth      int
+	template   *template.Template
+	Contents   string
+	Url        string
+	Data       map[string]any
+	Name       string
+	hydrations []hydration
 }
 
 type config struct {
@@ -95,6 +98,8 @@ func createMarkdownRenderer() goldmark.Markdown {
 	return goldmark.New(
 		goldmark.WithExtensions(
 			meta.Meta,
+			extension.GFM,
+			extension.Footnote,
 		),
 		goldmark.WithRendererOptions(
 			html.WithUnsafe(),
@@ -106,20 +111,29 @@ func shouldIgnore(name string) bool {
 	return name[0] == '_' || name[0] == '.'
 }
 
+func isPageFile(name string) bool {
+	return filepath.Ext(name) == ".md"
+}
+
 func shortHash(s string) string {
 	h := fnv.New32a()
 	h.Write([]byte(s))
 	return fmt.Sprintf("%x", h.Sum32())
 }
 
-func parseSite(config *config) {
-	stack := []string{config.pagesDir}
+type crawldir struct {
+	name  string
+	depth int
+}
+
+func crawlSite(config *config) {
+	stack := []crawldir{{config.pagesDir, 0}}
 
 	for len(stack) > 0 {
-		n := len(stack)
-		dir := stack[n-1]
-		stack = stack[:n-1]
-		entries, err := ioutil.ReadDir(dir)
+		end := len(stack) - 1
+		dir := stack[end]
+		stack = stack[:end]
+		entries, err := ioutil.ReadDir(dir.name)
 
 		if err != nil {
 			log.Fatal(err)
@@ -127,32 +141,36 @@ func parseSite(config *config) {
 
 		for _, entry := range entries {
 			name := entry.Name()
-			pathName := path.Join(dir, name)
-			relativePath := pathName[len(config.pagesDir):]
+			absPath := path.Join(dir.name, name)
+			relPath := absPath[len(config.pagesDir):]
 
 			if shouldIgnore(name) {
 				continue
 			} else if entry.IsDir() {
-				stack = append(stack, pathName)
-				config.directories = append(config.directories, relativePath)
-			} else if filepath.Ext(name) == ".md" {
-				id := shortHash(pathName)
-				url := relativePath
-				url = strings.Replace(url, ".md", ".html", 1)
-				url = strings.Replace(url, "index.html", "", 1)
+				stack = append(stack, crawldir{name: absPath, depth: dir.depth + 1})
+				config.directories = append(config.directories, relPath)
+			} else if isPageFile(absPath) {
+				id := shortHash(absPath)
+				depth := dir.depth
+
+				// index files are treated as part of the parent directory
+				if name == "index.md" {
+					depth -= 1
+				}
 
 				config.pages[id] = &page{
-					id:           shortHash(pathName),
-					path:         pathName,
-					dir:          dir,
-					relativePath: relativePath,
-					Name:         name,
-					Url:          url,
+					id:      id,
+					dir:     dir.name,
+					depth:   depth,
+					absPath: absPath,
+					relPath: relPath,
+					Name:    name,
+					Url:     relPath,
 				}
 			} else {
 				config.assets = append(config.assets, &asset{
-					path:         pathName,
-					relativePath: relativePath,
+					absPath: absPath,
+					relPath: relPath,
 				})
 			}
 		}
@@ -193,8 +211,8 @@ func (config *config) getPageIndex(dir string) []*page {
 	return index
 }
 
-func readPage(p *page, config *config) {
-	contents, err := os.ReadFile(p.path)
+func readPage(p *page, config *config) error {
+	contents, err := os.ReadFile(p.absPath)
 
 	if err != nil {
 		log.Fatal(err)
@@ -218,10 +236,11 @@ func readPage(p *page, config *config) {
 	tpl, err := template.New("page").Funcs(templateFuncs).Parse(string(contents))
 
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 
 	p.template = tpl
+	return nil
 }
 
 func readPages(config *config) {
@@ -236,10 +255,8 @@ type renderContext struct {
 	DefaultStyles string
 }
 
-func renderPage(page *page, config *config) {
+func renderPage(page *page, config *config) error {
 	scope := renderContext{Page: page, Config: config, DefaultStyles: themeCss}
-
-	// It's a three step process to render a page.
 
 	// 1. Execute the page's own template. This is a markdown template that will
 	// handle any in-page templating.
@@ -247,7 +264,7 @@ func renderPage(page *page, config *config) {
 	err := page.template.Execute(&pageBuf, scope)
 
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 
 	// 2. Convert the output from the previous step to HTML.
@@ -256,9 +273,11 @@ func renderPage(page *page, config *config) {
 	err = config.markdown.Convert(pageBuf.Bytes(), &htmlbuf, parser.WithContext(ctx))
 
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 
+	page.Url = strings.Replace(page.Url, ".md", ".html", 1)
+	page.Url = strings.Replace(page.Url, "index.html", "", 1)
 	page.Data = meta.Get(ctx)
 	page.Contents = htmlbuf.String()
 
@@ -267,16 +286,31 @@ func renderPage(page *page, config *config) {
 	err = config.template.Execute(&buf, scope)
 
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 
 	page.Contents = buf.String()
+	return nil
 }
 
-func renderPages(config *config) {
+func renderPages(config *config) error {
+	pages := make([]*page, 0, len(config.pages))
+
 	for _, page := range config.pages {
-		renderPage(page, config)
+		pages = append(pages, page)
 	}
+
+	sort.SliceStable(pages, func(i, j int) bool {
+		return pages[i].depth > pages[j].depth
+	})
+
+	for _, page := range pages {
+		if err := renderPage(page, config); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 func writeSite(config *config) {
@@ -296,7 +330,7 @@ func writeSite(config *config) {
 	}
 
 	for _, page := range config.pages {
-		outputPath := path.Join(config.outputDir, page.relativePath)
+		outputPath := path.Join(config.outputDir, page.relPath)
 		outputPath = strings.Replace(outputPath, ".md", ".html", 1)
 		f, err := os.Create(outputPath)
 
@@ -314,9 +348,9 @@ func writeSite(config *config) {
 	}
 
 	for _, asset := range config.assets {
-		outputPath := path.Join(config.outputDir, asset.relativePath)
+		outputPath := path.Join(config.outputDir, asset.relPath)
 
-		src, err := os.Open(asset.path)
+		src, err := os.Open(asset.absPath)
 
 		if err != nil {
 			log.Fatal(err)
@@ -336,27 +370,22 @@ func writeSite(config *config) {
 	}
 }
 
-func build(dir string) (*config, error) {
+func Build(dir string) (*config, error) {
+	start := time.Now()
 	config := createConfig(dir)
-	parseSite(&config)
+	crawlSite(&config)
 	readPages(&config)
 	renderPages(&config)
 	if err := bundle(&config); err != nil {
 		return nil, err
 	}
 	writeSite(&config)
+	fmt.Printf("built site in %s\n", time.Since(start))
 	return &config, nil
 }
 
-func timedBuild(dir string) (*config, error) {
-	start := time.Now()
-	config, err := build(dir)
-	fmt.Printf("built site in %s\n", time.Since(start))
-	return config, err
-}
-
-func serve(dir string) {
-	config, err := build(dir)
+func Serve(dir string) {
+	config, err := Build(dir)
 
 	if err != nil {
 		log.Fatal(err)
@@ -365,7 +394,10 @@ func serve(dir string) {
 	fs := http.FileServer(http.Dir(config.outputDir))
 
 	http.Handle("/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		config, err = timedBuild(dir)
+		// Rebuild the site whenever an HTML file is requested
+		if r.URL.Path == "/" || strings.HasSuffix(r.URL.Path, ".html") {
+			config, err = Build(dir)
+		}
 
 		if err != nil {
 			http.Error(w, "Build failed", 500)
@@ -375,6 +407,7 @@ func serve(dir string) {
 		fs.ServeHTTP(w, r)
 	}))
 
+	fmt.Println("serving site at http://localhost:8000...")
 	err = http.ListenAndServe(":8000", nil)
 
 	if err != nil {
@@ -383,17 +416,25 @@ func serve(dir string) {
 }
 
 func main() {
-	cwdFlag := flag.String("cwd", "", "")
+	var cwd string
+	var serve bool
+
+	flag.BoolVar(&serve, "serve", false, "serve the site and rebuild for each request")
+	flag.StringVar(&cwd, "cwd", "", "cwd of your site")
 	flag.Parse()
 
-	if cwdFlag != nil {
-		err := os.Chdir(*cwdFlag)
+	if cwd != "" {
+		err := os.Chdir(cwd)
 		if err != nil {
 			log.Fatal(err)
 		}
 	}
 
 	inputDir, _ := os.Getwd()
-	//timedBuild(inputDir)
-	serve(inputDir)
+
+	if serve {
+		Serve(inputDir)
+	} else {
+		Build(inputDir)
+	}
 }

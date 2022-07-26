@@ -135,7 +135,7 @@ func createClientBundles(config *config) error {
 		for _, err := range result.Errors {
 			id := strings.ReplaceAll(err.Location.File, "page:", "")
 			page := config.pages[id]
-			fmt.Printf("%s in %s\n", err.Text, page.relativePath)
+			fmt.Printf("%s in %s\n", err.Text, page.relPath)
 		}
 
 		return errors.New("bundler failed")
@@ -238,7 +238,7 @@ func hydratePagesPlugin(config *config) api.Plugin {
 				return api.OnLoadResult{
 					Contents:   &contents,
 					Loader:     api.LoaderJS,
-					ResolveDir: path.Dir(page.path),
+					ResolveDir: path.Dir(page.absPath),
 				}, nil
 			})
 		},

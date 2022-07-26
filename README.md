@@ -1,6 +1,5 @@
 # Melange
 
-- Files starting with _ or . are ignored
 - Files ending with .md become .html
 - Every file is templated into _theme.html if it exists, if not use the default theme
 
@@ -21,24 +20,31 @@ Finally the appropriate scripts/styles are injected into the pages and the every
 
 ## TODO
 - [ ] Use long-running node process to prevent paying for once-per-build startup
-- [ ] Support custom _theme.html files
+- [x] Support custom _theme.html files
 - [x] Fix collisions between hydrations IDs across separate files
 - [x] Fix rendering order to make `{{ pages }}` deterministic (render index.md last)
 - [x] Figure out how to make hydration generic (preact/react swap)
 - [x] Support build time props on components
 - [ ] Syntax highlighting
-- [ ] Make common error presentation as friendly as possible
-  - [ ] Bundler errors (probably parse related)
-  - [ ] Errors inside templates
-  - [ ] Errors inside node
 - [ ] Bundle function that adds a script without hydrations
 - [ ] Preflight checks for dependencies
   - [ ] Node
-  - [ ] Framework
+  - [ ] Frameworks
+- [ ] Make common error presentation as friendly as possible
+  - [ ] Esbuild bundler errors (probably parse related)
+  - [ ] Node execution errors
+  - [ ] Parse time errors inside templates
+  - [ ] Runtime errors inside templates
+- [ ] Tests
+  - Ignored pages aren't copied/built
+  - Site is rendered from leaf to root
+  - Frontmatter is parsed
+  - Test that page with no elements is has no script tags
+  - Test that page with static elements has no script tags
+
+## Known
 - [ ] Make jsxImportSource work (might be blocked by https://github.com/evanw/esbuild/pull/2349)
 - [x] Support prod builds
 - [ ] Solve the problem of SSR components not generating CSS for client
 
 ## Tests
-- Test that page with no elements is has no script tags
-- Test that page with static elements has no script tags

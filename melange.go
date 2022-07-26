@@ -28,10 +28,10 @@ import (
 
 var (
 	//go:embed theme.gohtml
-	themeHtml string
+	defaultThemeHtml string
 
 	//go:embed theme.css
-	themeCss string
+	defaultThemeStyles string
 )
 
 type asset struct {
@@ -78,15 +78,14 @@ type config struct {
 	framework   framework
 }
 
-func createConfig(inputDir string, production bool) config {
+func createConfig(inputDir string, production bool) (config, error) {
 	outputDir := path.Join(inputDir, "_site")
 	pagesDir := path.Join(inputDir, "pages")
 	cacheDir := path.Join(inputDir, "node_modules/.cache/melange")
-
-	template, err := template.New("page").Parse(themeHtml)
+	template, err := createThemeTemplate(pagesDir, "_theme.html", "_theme.gohtml")
 
 	if err != nil {
-		log.Fatal(err)
+		return config{}, err
 	}
 
 	return config{
@@ -99,7 +98,30 @@ func createConfig(inputDir string, production bool) config {
 		markdown:   createMarkdownRenderer(),
 		pages:      map[string]*page{},
 		framework:  preact,
+	}, nil
+}
+
+func createThemeTemplate(dir string, names ...string) (*template.Template, error) {
+	var html []byte
+
+	for _, name := range names {
+		html, _ = os.ReadFile(path.Join(dir, name))
+		if html != nil {
+			break
+		}
 	}
+
+	if html == nil {
+		html = []byte(defaultThemeHtml)
+	}
+
+	template, err := template.New("page").Parse(string(html))
+
+	if err != nil {
+		return nil, err
+	}
+
+	return template, nil
 }
 
 func createMarkdownRenderer() goldmark.Markdown {
@@ -292,7 +314,7 @@ type renderContext struct {
 }
 
 func renderPage(page *page, config *config) error {
-	scope := renderContext{Page: page, Config: config, DefaultStyles: themeCss}
+	scope := renderContext{Page: page, Config: config, DefaultStyles: defaultThemeStyles}
 
 	// 1. Execute the page's own template. This is a markdown template that will
 	// handle any in-page templating.
@@ -408,7 +430,12 @@ func writeSite(config *config) {
 
 func Build(dir string, prod bool) (*config, error) {
 	start := time.Now()
-	config := createConfig(dir, prod)
+	config, err := createConfig(dir, prod)
+
+	if err != nil {
+		return nil, err
+	}
+
 	crawlSite(&config)
 
 	if err := readPages(&config); err != nil {

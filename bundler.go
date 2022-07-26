@@ -35,17 +35,14 @@ func createStaticBundle(config *config) error {
 			Sourcefile: "static-bundle.js",
 			Loader:     api.LoaderJS,
 		},
-		Write:       true,
-		Bundle:      true,
-		Metafile:    true,
-		Sourcemap:   api.SourceMapExternal,
-		Outfile:     outfile,
-		Platform:    api.PlatformNode,
-		Format:      api.FormatCommonJS,
-		JSXMode:     api.JSXModeTransform,
-		JSXFactory:  config.framework.esbuildOptions.JSXFactory,
-		JSXFragment: config.framework.esbuildOptions.JSXFragment,
-		External:    config.framework.staticExternal,
+		Write:     true,
+		Bundle:    true,
+		Metafile:  true,
+		Sourcemap: api.SourceMapExternal,
+		Outfile:   outfile,
+		Platform:  api.PlatformNode,
+		Format:    api.FormatCommonJS,
+		External:  config.framework.staticExternal,
 	})
 
 	if len(result.Errors) > 0 {
@@ -104,12 +101,9 @@ func createClientBundles(config *config) error {
 		//MinifyWhitespace: true,
 		//MinifyIdentifiers: true,
 		//MinifySyntax: true,
-		Platform:    api.PlatformBrowser,
-		Format:      api.FormatIIFE,
-		JSXMode:     api.JSXModeTransform,
-		JSXFactory:  config.framework.esbuildOptions.JSXFactory,
-		JSXFragment: config.framework.esbuildOptions.JSXFragment,
-		Plugins:     []api.Plugin{hydratePagesPlugin(config)},
+		Platform: api.PlatformBrowser,
+		Format:   api.FormatIIFE,
+		Plugins:  []api.Plugin{hydratePagesPlugin(config)},
 	})
 
 	if len(result.Errors) > 0 {

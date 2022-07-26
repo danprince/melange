@@ -17,11 +17,7 @@ type framework struct {
 
 var preact = framework{
 	staticExternal: []string{"preact", "preact-render-to-string"},
-	esbuildOptions: api.BuildOptions{
-		JSXMode:     api.JSXModeTransform,
-		JSXFactory:  "h",
-		JSXFragment: "Fragment",
-	},
+	esbuildOptions: api.BuildOptions{},
 	staticBundle: func(config *config) string {
 		var builder strings.Builder
 
@@ -60,6 +56,58 @@ var preact = framework{
 				))
 				builder.WriteString(fmt.Sprintf(
 					"hydrate(h(%s), document.getElementById(\"%s\"));\n",
+					element.id,
+					element.id,
+				))
+			}
+		}
+
+		return builder.String()
+	},
+}
+
+var react = framework{
+	staticExternal: []string{"react", "react-dom"},
+	esbuildOptions: api.BuildOptions{},
+	staticBundle: func(config *config) string {
+		var builder strings.Builder
+
+		builder.WriteString("import * as React from \"react\";\n")
+		builder.WriteString("import { renderToString } from \"react-dom/server\";\n")
+		builder.WriteString("let elements = {};\n")
+
+		for _, page := range config.pages {
+			for _, element := range page.elements {
+				builder.WriteString(fmt.Sprintf(
+					"import C%s from \"%s\";\n",
+					element.id,
+					path.Join(page.dir, element.src),
+				))
+				builder.WriteString(fmt.Sprintf(
+					"elements.%s = renderToString(React.createElement(C%s));\n",
+					element.id,
+					element.id,
+				))
+			}
+		}
+
+		builder.WriteString("process.stdout.write(JSON.stringify(elements))")
+		return builder.String()
+	},
+	clientBundle: func(page *page) string {
+		var builder strings.Builder
+		builder.WriteString("import * as React from \"react\";\n")
+		builder.WriteString("import { hydrateRoot } from \"react-dom/client\";\n")
+
+		for _, element := range page.elements {
+			if element.hydrate {
+				builder.WriteString(fmt.Sprintf(
+					"import { default as %s } from \"%s\";\n",
+					element.id,
+					element.src,
+				))
+				builder.WriteString(fmt.Sprintf(
+					"hydrateRoot(document.getElementById(\"%s\"), React.createElement(%s));\n",
 					element.id,
 					element.id,
 				))

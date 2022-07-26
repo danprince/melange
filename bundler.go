@@ -111,13 +111,21 @@ func createStaticBundle(config *config) error {
 }
 
 func createClientBundles(config *config) error {
-	var entryPoints []string
+	var entryPoints []api.EntryPoint
 
 	for _, page := range config.pages {
 		for _, element := range page.elements {
 			if element.csr {
-				entryPoint := fmt.Sprintf("page:%s", page.id)
-				entryPoints = append(entryPoints, entryPoint)
+				name := page.id
+
+				if !config.production {
+					name = slugify(page.relPath)
+				}
+
+				entryPoints = append(entryPoints, api.EntryPoint{
+					InputPath:  fmt.Sprintf("page:%s", page.id),
+					OutputPath: name,
+				})
 				break
 			}
 		}
@@ -130,22 +138,22 @@ func createClientBundles(config *config) error {
 	}
 
 	result := api.Build(api.BuildOptions{
-		EntryPoints:       entryPoints,
-		EntryNames:        entryNames,
-		Outdir:            config.assetsDir,
-		Write:             true,
-		Bundle:            true,
-		Metafile:          true,
-		Sourcemap:         api.SourceMapExternal,
-		MinifyWhitespace:  config.production,
-		MinifyIdentifiers: config.production,
-		MinifySyntax:      config.production,
-		Incremental:       !config.production,
-		Platform:          api.PlatformBrowser,
-		Format:            api.FormatIIFE,
-		Plugins:           []api.Plugin{hydratePagesPlugin(config)},
-		PublicPath:        strings.TrimPrefix(config.assetsDir, config.outputDir),
-		Loader:            loader,
+		EntryPointsAdvanced: entryPoints,
+		EntryNames:          entryNames,
+		Outdir:              config.assetsDir,
+		Write:               true,
+		Bundle:              true,
+		Metafile:            true,
+		Sourcemap:           api.SourceMapExternal,
+		MinifyWhitespace:    config.production,
+		MinifyIdentifiers:   config.production,
+		MinifySyntax:        config.production,
+		Incremental:         !config.production,
+		Platform:            api.PlatformBrowser,
+		Format:              api.FormatIIFE,
+		Plugins:             []api.Plugin{hydratePagesPlugin(config)},
+		PublicPath:          strings.TrimPrefix(config.assetsDir, config.outputDir),
+		Loader:              loader,
 	})
 
 	if len(result.Errors) > 0 {

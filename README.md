@@ -1,12 +1,13 @@
-# Melange
+# Melange
+
+Go static site generator that supports a simple markdown only folder structure and partial hydration for embedded Preact/React components.
 
 - Files ending with .md become .html
 - Every file is templated into _theme.html if it exists, if not use the default theme
-
 - Files can render Preact components in 3 ways
-  1. Static render `{{ "counter.tsx" | render }}`
-  2. Hydrate `{{ "counter.tsx" | hydrate }}`
-  3. Dynamic render `{{ "counter.tsx" | dynamic }}`
+  1. Static render `{{ render "./counter.tsx" "count" 1 }}`
+  2. Hydrate `{{ render "./counter.tsx" "count" 1 | client_load }}`
+  3. Dynamic render `{{ render "./counter.tsx" | client_only }}`
 
 Initially these functions will replace the content with a marker token, that allows us to swap the value out for the HTML we get from actually rendering the component asynchronously later. These functions will wrap that marker token in a div with an ID that allows the component to be "rehydrated" at the client side, if necessary.
 
@@ -27,7 +28,7 @@ Finally the appropriate scripts/styles are injected into the pages and the every
 - [x] Figure out how to make hydration generic (preact/react swap)
 - [x] Support build time props on components
 - [ ] Try npm free react-cdn/preact-cdn frameworks?
-- [ ] Support a sensible set of assets
+- [x] Support a sensible set of assets
   - Useful starting place https://github.com/remix-run/remix/blob/37490ad24dee2af81f5c309ff0fa0e6e84f965bd/packages/remix-dev/compiler/loaders.ts
 - [ ] esbuild plugin that strips non-js files from the server build?
 - [ ] Syntax highlighting
@@ -56,11 +57,9 @@ Finally the appropriate scripts/styles are injected into the pages and the every
 - Small markdown ecosystem
 - No MDX option
 - Relies on node for execution
-- Few/plugins for native esbuild
+- Few plugins for native esbuild
 
 ## Known
 - [ ] Make jsxImportSource work (might be blocked by https://github.com/evanw/esbuild/pull/2349)
 - [x] Support prod builds
 - [ ] Solve the problem of SSR components not generating CSS for client
-
-## Tests

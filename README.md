@@ -19,12 +19,17 @@ Go has to ask a Nodejs process to evaluate the static bundle, then the response 
 Finally the appropriate scripts/styles are injected into the pages and the everything is copied/written to disk.
 
 ## TODO
-- [ ] Use long-running node process to prevent paying for once-per-build startup
+- [x] Use long-running node process to prevent paying for once-per-build startup
+  - [x] Don't use stdio (prevent console.log from messing with output)
 - [x] Support custom _theme.html files
 - [x] Fix collisions between hydrations IDs across separate files
 - [x] Fix rendering order to make `{{ pages }}` deterministic (render index.md last)
 - [x] Figure out how to make hydration generic (preact/react swap)
 - [x] Support build time props on components
+- [ ] Try npm free react-cdn/preact-cdn frameworks?
+- [ ] Support a sensible set of assets
+  - Useful starting place https://github.com/remix-run/remix/blob/37490ad24dee2af81f5c309ff0fa0e6e84f965bd/packages/remix-dev/compiler/loaders.ts
+- [ ] esbuild plugin that strips non-js files from the server build?
 - [ ] Syntax highlighting
 - [ ] Bundle function that adds a script without hydrations
 - [ ] Preflight checks for dependencies
@@ -36,11 +41,22 @@ Finally the appropriate scripts/styles are injected into the pages and the every
   - [ ] Parse time errors inside templates
   - [ ] Runtime errors inside templates
 - [ ] Tests
-  - Ignored pages aren't copied/built
-  - Site is rendered from leaf to root
-  - Frontmatter is parsed
-  - Test that page with no elements is has no script tags
-  - Test that page with static elements has no script tags
+  - [ ] Ignored pages aren't copied/built
+  - [ ] Site is rendered from leaf to root
+  - [ ] Frontmatter is parsed
+  - [ ] Test that page with no elements is has no script tags
+  - [ ] Test that page with static elements has no script tags
+
+## Go vs Node (Bun/Deno)
++ Faster
++ Static binary
++ Built in templates
++ Native esbuild
++ Simpler compilations (than TS)
+- Small markdown ecosystem
+- No MDX option
+- Relies on node for execution
+- Few/plugins for native esbuild
 
 ## Known
 - [ ] Make jsxImportSource work (might be blocked by https://github.com/evanw/esbuild/pull/2349)

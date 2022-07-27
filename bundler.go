@@ -1,11 +1,9 @@
 package main
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"log"
-	"os/exec"
 	"path"
 	"strings"
 
@@ -85,19 +83,13 @@ func createStaticBundle(config *config) error {
 		return errors.New("bundler failed")
 	}
 
-	// TODO: This is a huge bottleneck (waiting for node to start)
 	var renderedHtml map[string]string
-	renderedHtmlJson, err := exec.Command("node", outfile).Output()
+	// TODO: This is a huge bottleneck (waiting for node to start)
+	//renderedHtmlJson, err := exec.Command("node", outfile).Output()
+	err := nodeExecFile(outfile, &renderedHtml)
 
 	if err != nil {
-		msg := err.(*exec.ExitError).Stderr
-		return fmt.Errorf("node exec failed: %s", msg)
-	}
-
-	err = json.Unmarshal(renderedHtmlJson, &renderedHtml)
-
-	if err != nil {
-		return fmt.Errorf("\n\n%s\n\njson parse failed: %s", renderedHtmlJson, err)
+		return fmt.Errorf("node exec failed: %s", err)
 	}
 
 	for _, page := range config.pages {
